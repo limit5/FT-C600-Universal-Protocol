@@ -109,13 +109,31 @@
       "command_id": "0x95",
       "direction": "GET+SET",
       "desc": "Extended barcode result with corner coordinates and ROI metadata (v2+ only)",
-      "note": "Payload filled by roi_capture_fill_ext_result_response(); requires UVC_ALGORITHM_USE_STATIC_LIBRARY_VERSION >= 2",
+      "note": "Requires UVC_ALGORITHM_USE_STATIC_LIBRARY_VERSION >= 2. Filled by roi_capture_fill_ext_result_response()",
       "set_fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x95)" }
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x95) — query trigger" }
       ],
       "get_fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x95)" },
-        { "name": "data", "offset": 1, "type": "uint8", "size": 59, "desc": "ROI capture result (corners, metadata) — format defined by roi_capture module" }
+        { "name": "echo",           "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x95)" },
+        { "name": "result_status",  "offset": 1,  "type": "uint8",  "desc": "0=Empty, 1=Valid" },
+        { "name": "corner0_x",     "offset": 2,  "type": "int16",  "desc": "Corner 0 X (LE)" },
+        { "name": "corner0_y",     "offset": 4,  "type": "int16",  "desc": "Corner 0 Y (LE)" },
+        { "name": "corner1_x",     "offset": 6,  "type": "int16",  "desc": "Corner 1 X (LE)" },
+        { "name": "corner1_y",     "offset": 8,  "type": "int16",  "desc": "Corner 1 Y (LE)" },
+        { "name": "corner2_x",     "offset": 10, "type": "int16",  "desc": "Corner 2 X (LE)" },
+        { "name": "corner2_y",     "offset": 12, "type": "int16",  "desc": "Corner 2 Y (LE)" },
+        { "name": "corner3_x",     "offset": 14, "type": "int16",  "desc": "Corner 3 X (LE)" },
+        { "name": "corner3_y",     "offset": 16, "type": "int16",  "desc": "Corner 3 Y (LE)" },
+        { "name": "orientation",    "offset": 18, "type": "int16",  "desc": "Barcode orientation (LE)" },
+        { "name": "ec_level_len",   "offset": 20, "type": "uint8",  "desc": "EC level string length" },
+        { "name": "ec_level",       "offset": 21, "type": "char",   "size": 15, "desc": "EC level string (null-terminated)" },
+        { "name": "is_2d",          "offset": 36, "type": "uint8",  "desc": "0=1D barcode, 1=2D code" },
+        { "name": "roi_data_ready", "offset": 37, "type": "uint8",  "desc": "1=ROI JPEG available via 0x96" },
+        { "name": "roi_jpeg_size",  "offset": 38, "type": "uint32", "desc": "ROI JPEG size in bytes (LE)" },
+        { "name": "roi_width",      "offset": 42, "type": "uint16", "desc": "ROI image width (LE)" },
+        { "name": "roi_height",     "offset": 44, "type": "uint16", "desc": "ROI image height (LE)" },
+        { "name": "paired_seq",     "offset": 46, "type": "uint32", "desc": "Paired sequence number (LE)" },
+        { "name": "reserved",       "offset": 50, "type": "uint8",  "size": 10, "desc": "Reserved (zeros)" }
       ]
     }
   ]

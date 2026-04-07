@@ -8,36 +8,123 @@
       "command_name": "RAW_IMAGE_CAPTURE",
       "command_id": "0x92",
       "direction": "GET+SET",
-      "desc": "Control raw image capture and read chunk data",
-      "note": "SET delegated to raw_capture_xu_set(&g_raw_capture, ...), GET filled by raw_capture_fill_get_response()"
+      "desc": "Control raw image capture and read chunk data (chunk_size=45)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0x92)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "action",      "offset": 2, "type": "uint8",  "desc": "0x01=Arm, 0x02=Disarm, 0x03=Set chunk index" },
+        { "name": "chunk_index", "offset": 3, "type": "uint16", "desc": "Chunk index (LE, only when action=0x03)" }
+      ],
+      "get_fields": [
+        { "name": "echo",            "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x92)" },
+        { "name": "capture_enabled", "offset": 1,  "type": "uint8",  "desc": "0=Disabled, 1=Armed" },
+        { "name": "data_ready",      "offset": 2,  "type": "uint8",  "desc": "0=Not captured, 1=Available" },
+        { "name": "total_size",      "offset": 3,  "type": "uint32", "desc": "Compressed data size in bytes (LE)" },
+        { "name": "width",           "offset": 7,  "type": "uint16", "desc": "Image width (LE)" },
+        { "name": "height",          "offset": 9,  "type": "uint16", "desc": "Image height (LE)" },
+        { "name": "format",          "offset": 11, "type": "uint8",  "desc": "0x00=NV12, 0x01=PackBits" },
+        { "name": "chunk_index",     "offset": 12, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "chunk_size",      "offset": 14, "type": "uint8",  "desc": "Bytes in this chunk (0-45)" },
+        { "name": "chunk_data",      "offset": 15, "type": "uint8",  "size": 45, "desc": "Raw/compressed image data" }
+      ]
     },
     {
       "command_name": "JPEG_IMAGE_CAPTURE",
       "command_id": "0x94",
       "direction": "GET+SET",
-      "desc": "Control JPEG image capture and read chunk data",
-      "note": "SET delegated to jpeg_capture_xu_set(&g_jpeg_capture, ...), GET filled by jpeg_capture_fill_get_response()"
+      "desc": "Control JPEG image capture and read chunk data (chunk_size=45)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0x94)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "action",      "offset": 2, "type": "uint8",  "desc": "0x01=Arm, 0x02=Disarm, 0x03=Set chunk index, 0x04=Set quality" },
+        { "name": "chunk_index", "offset": 3, "type": "uint16", "desc": "Chunk index (LE, only when action=0x03)" },
+        { "name": "quality",     "offset": 3, "type": "uint8",  "desc": "JPEG quality 1-100 (only when action=0x04)" }
+      ],
+      "get_fields": [
+        { "name": "echo",            "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x94)" },
+        { "name": "capture_enabled", "offset": 1,  "type": "uint8",  "desc": "0=Disabled, 1=Armed" },
+        { "name": "data_ready",      "offset": 2,  "type": "uint8",  "desc": "0=Not captured, 1=JPEG available" },
+        { "name": "jpeg_size",       "offset": 3,  "type": "uint32", "desc": "JPEG data size in bytes (LE)" },
+        { "name": "width",           "offset": 7,  "type": "uint16", "desc": "Image width (LE)" },
+        { "name": "height",          "offset": 9,  "type": "uint16", "desc": "Image height (LE)" },
+        { "name": "format",          "offset": 11, "type": "uint8",  "desc": "Always 0x01 (JPEG)" },
+        { "name": "chunk_index",     "offset": 12, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "chunk_size",      "offset": 14, "type": "uint8",  "desc": "Bytes in this chunk (0-45)" },
+        { "name": "chunk_data",      "offset": 15, "type": "uint8",  "size": 45, "desc": "JPEG data" }
+      ]
     },
     {
       "command_name": "ROI_IMAGE_CAPTURE",
       "command_id": "0x96",
       "direction": "GET+SET",
-      "desc": "Control ROI (Region of Interest) image capture (v2+ only)",
-      "note": "Requires UVC_ALGORITHM_USE_STATIC_LIBRARY_VERSION >= 2. SET delegated to roi_capture_xu_set(), GET filled by roi_capture_fill_get_response()"
+      "desc": "Control ROI image capture and read chunk data (chunk_size=46, v2+ only)",
+      "note": "Requires UVC_ALGORITHM_USE_STATIC_LIBRARY_VERSION >= 2. ROI is always-on, triggered by decode success.",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0x96)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "action",      "offset": 2, "type": "uint8",  "desc": "0x03=Set chunk index" },
+        { "name": "chunk_index", "offset": 3, "type": "uint16", "desc": "Chunk index (LE, only when action=0x03)" }
+      ],
+      "get_fields": [
+        { "name": "echo",        "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x96)" },
+        { "name": "data_ready",  "offset": 1,  "type": "uint8",  "desc": "0=No ROI captured, 1=JPEG available" },
+        { "name": "is_2d",       "offset": 2,  "type": "uint8",  "desc": "0=1D barcode, 1=2D code" },
+        { "name": "jpeg_size",   "offset": 3,  "type": "uint32", "desc": "ROI JPEG size in bytes (LE)" },
+        { "name": "roi_width",   "offset": 7,  "type": "uint16", "desc": "ROI width (LE)" },
+        { "name": "roi_height",  "offset": 9,  "type": "uint16", "desc": "ROI height (LE)" },
+        { "name": "chunk_index", "offset": 11, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "chunk_size",  "offset": 13, "type": "uint8",  "desc": "Bytes in this chunk (0-46)" },
+        { "name": "chunk_data",  "offset": 14, "type": "uint8",  "size": 46, "desc": "ROI JPEG data" }
+      ]
     },
     {
       "command_name": "DECODE_RAW_CAPTURE",
       "command_id": "0x99",
       "direction": "GET+SET",
-      "desc": "Capture the raw image that the decoder processed",
-      "note": "Same protocol as 0x92 but uses g_decode_capture; echo byte overridden to 0x99"
+      "desc": "Capture the raw image that the decoder processed (same protocol as 0x92, echo=0x99)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0x99)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "action",      "offset": 2, "type": "uint8",  "desc": "0x01=Arm, 0x02=Disarm, 0x03=Set chunk index" },
+        { "name": "chunk_index", "offset": 3, "type": "uint16", "desc": "Chunk index (LE, only when action=0x03)" }
+      ],
+      "get_fields": [
+        { "name": "echo",            "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x99)" },
+        { "name": "capture_enabled", "offset": 1,  "type": "uint8",  "desc": "0=Disabled, 1=Armed" },
+        { "name": "data_ready",      "offset": 2,  "type": "uint8",  "desc": "0=Not captured, 1=Available" },
+        { "name": "total_size",      "offset": 3,  "type": "uint32", "desc": "Compressed data size in bytes (LE)" },
+        { "name": "width",           "offset": 7,  "type": "uint16", "desc": "Image width (LE)" },
+        { "name": "height",          "offset": 9,  "type": "uint16", "desc": "Image height (LE)" },
+        { "name": "format",          "offset": 11, "type": "uint8",  "desc": "0x00=NV12, 0x01=PackBits" },
+        { "name": "chunk_index",     "offset": 12, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "chunk_size",      "offset": 14, "type": "uint8",  "desc": "Bytes in this chunk (0-45)" },
+        { "name": "chunk_data",      "offset": 15, "type": "uint8",  "size": 45, "desc": "Raw/compressed image data" }
+      ]
     },
     {
       "command_name": "DECODE_JPEG_CAPTURE",
       "command_id": "0x9A",
       "direction": "GET+SET",
-      "desc": "Capture the decoded image as JPEG",
-      "note": "Same protocol as 0x94 but uses g_decode_jpeg_capture; echo byte overridden to 0x9A"
+      "desc": "Capture the decoded image as JPEG (same protocol as 0x94, echo=0x9A)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0x9A)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "action",      "offset": 2, "type": "uint8",  "desc": "0x01=Arm, 0x02=Disarm, 0x03=Set chunk index, 0x04=Set quality" },
+        { "name": "chunk_index", "offset": 3, "type": "uint16", "desc": "Chunk index (LE, only when action=0x03)" },
+        { "name": "quality",     "offset": 3, "type": "uint8",  "desc": "JPEG quality 1-100 (only when action=0x04)" }
+      ],
+      "get_fields": [
+        { "name": "echo",            "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x9A)" },
+        { "name": "capture_enabled", "offset": 1,  "type": "uint8",  "desc": "0=Disabled, 1=Armed" },
+        { "name": "data_ready",      "offset": 2,  "type": "uint8",  "desc": "0=Not captured, 1=JPEG available" },
+        { "name": "jpeg_size",       "offset": 3,  "type": "uint32", "desc": "JPEG data size in bytes (LE)" },
+        { "name": "width",           "offset": 7,  "type": "uint16", "desc": "Image width (LE)" },
+        { "name": "height",          "offset": 9,  "type": "uint16", "desc": "Image height (LE)" },
+        { "name": "format",          "offset": 11, "type": "uint8",  "desc": "Always 0x01 (JPEG)" },
+        { "name": "chunk_index",     "offset": 12, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "chunk_size",      "offset": 14, "type": "uint8",  "desc": "Bytes in this chunk (0-45)" },
+        { "name": "chunk_data",      "offset": 15, "type": "uint8",  "size": 45, "desc": "JPEG data" }
+      ]
     },
     {
       "command_name": "BMP_UPLOAD_DECODE",
