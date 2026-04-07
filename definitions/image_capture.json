@@ -1,0 +1,74 @@
+{
+  "module": "ImageCapture",
+  "version": "3.0",
+  "description": "Raw, JPEG, ROI image capture and BMP upload decode",
+  "payload_size": 60,
+  "commands": [
+    {
+      "command_name": "RAW_IMAGE_CAPTURE",
+      "command_id": "0x92",
+      "direction": "GET+SET",
+      "desc": "Control raw image capture and read chunk data",
+      "note": "SET delegated to raw_capture_xu_set(&g_raw_capture, ...), GET filled by raw_capture_fill_get_response()"
+    },
+    {
+      "command_name": "JPEG_IMAGE_CAPTURE",
+      "command_id": "0x94",
+      "direction": "GET+SET",
+      "desc": "Control JPEG image capture and read chunk data",
+      "note": "SET delegated to jpeg_capture_xu_set(&g_jpeg_capture, ...), GET filled by jpeg_capture_fill_get_response()"
+    },
+    {
+      "command_name": "ROI_IMAGE_CAPTURE",
+      "command_id": "0x96",
+      "direction": "GET+SET",
+      "desc": "Control ROI (Region of Interest) image capture (v2+ only)",
+      "note": "Requires UVC_ALGORITHM_USE_STATIC_LIBRARY_VERSION >= 2. SET delegated to roi_capture_xu_set(), GET filled by roi_capture_fill_get_response()"
+    },
+    {
+      "command_name": "DECODE_RAW_CAPTURE",
+      "command_id": "0x99",
+      "direction": "GET+SET",
+      "desc": "Capture the raw image that the decoder processed",
+      "note": "Same protocol as 0x92 but uses g_decode_capture; echo byte overridden to 0x99"
+    },
+    {
+      "command_name": "DECODE_JPEG_CAPTURE",
+      "command_id": "0x9A",
+      "direction": "GET+SET",
+      "desc": "Capture the decoded image as JPEG",
+      "note": "Same protocol as 0x94 but uses g_decode_jpeg_capture; echo byte overridden to 0x9A"
+    },
+    {
+      "command_name": "BMP_UPLOAD_DECODE",
+      "command_id": "0x9B",
+      "direction": "GET+SET",
+      "desc": "Upload a BMP image to device for barcode decoding",
+      "set_fields": [
+        { "name": "echo",    "offset": 0, "type": "uint8", "desc": "Command ID (0x9B)" },
+        { "name": "size",    "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "sub_cmd", "offset": 2, "type": "uint8", "desc": "Sub-command" }
+      ],
+      "sub_commands": [
+        { "sub_id": "0x00", "name": "RESET",         "desc": "Reset/cancel upload" },
+        { "sub_id": "0x01", "name": "START",          "desc": "Start upload", "params": [
+          { "name": "width",           "offset": 3, "type": "uint16", "desc": "Image width (LE)" },
+          { "name": "height",          "offset": 5, "type": "uint16", "desc": "Image height (LE)" },
+          { "name": "compressed_size", "offset": 7, "type": "uint32", "desc": "Compressed size in bytes (LE)" }
+        ]},
+        { "sub_id": "0x02", "name": "DATA_CHUNK",     "desc": "Send data chunk", "params": [
+          { "name": "chunk_idx", "offset": 3, "type": "uint16", "desc": "Chunk index (LE)" },
+          { "name": "data_len",  "offset": 5, "type": "uint8",  "desc": "Data length in this chunk" },
+          { "name": "data",      "offset": 6, "type": "uint8",  "size": 50, "desc": "Image data (up to 50 bytes)" }
+        ]},
+        { "sub_id": "0x03", "name": "TRIGGER_DECODE",  "desc": "Trigger decode (all chunks sent)" }
+      ],
+      "get_fields": [
+        { "name": "echo",            "offset": 0, "type": "uint8",  "desc": "Command ID echo (0x9B)" },
+        { "name": "status",          "offset": 1, "type": "uint8",  "desc": "0=Idle, 1=Receiving, 2=Decoding, 3=Done, 4=Error" },
+        { "name": "found",           "offset": 2, "type": "uint8",  "desc": "0=No barcode, 1=Found (valid when status==3)" },
+        { "name": "chunks_received", "offset": 3, "type": "uint16", "desc": "Chunks received so far (LE)" }
+      ]
+    }
+  ]
+}

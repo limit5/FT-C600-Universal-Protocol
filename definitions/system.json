@@ -1,46 +1,104 @@
 {
   "module": "System",
-  "version": "2.0",
-  "description": "Core system management and status definitions for FT-C600 platform",
+  "version": "3.0",
+  "description": "System management, handshake, device info, power control and reboot",
+  "payload_size": 60,
   "commands": [
     {
-      "name": "SYS_HANDSHAKE",
-      "id_hint": "0xA0",
-      "desc": "System unlock mechanism using magic keys",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo" },
-        { "name": "key1", "offset": 1, "type": "uint8", "value": 85, "desc": "Magic Key 1 (0x55)" },
-        { "name": "key2", "offset": 2, "type": "uint8", "value": 170, "desc": "Magic Key 2 (0xAA)" },
-        { "name": "status", "offset": 3, "type": "uint8", "desc": "Lock status (0:Locked, 1:Unlocked)" }
+      "command_name": "INIT_HANDSHAKE",
+      "command_id": "0xA0",
+      "direction": "GET+SET",
+      "desc": "Lock/unlock device XU commands. Device starts locked; must unlock before issuing other SET commands (except 0xA1, 0xA2).",
+      "set_fields": [
+        { "name": "echo",     "offset": 0, "type": "uint8",  "desc": "Command ID (0xA0)" },
+        { "name": "size",     "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "magic1",   "offset": 2, "type": "uint8",  "desc": "0x55 to unlock, 0x00 to lock" },
+        { "name": "magic2",   "offset": 3, "type": "uint8",  "desc": "0xAA to unlock" }
+      ],
+      "get_fields": [
+        { "name": "echo",      "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xA0)" },
+        { "name": "unlocked",  "offset": 1, "type": "uint8",  "desc": "0=Locked, 1=Unlocked" },
+        { "name": "uptime_ms", "offset": 2, "type": "uint32", "desc": "System uptime in milliseconds (LE)" }
       ]
     },
     {
-      "name": "DEVICE_INFO",
-      "id_hint": "0xA1",
-      "desc": "Hardware and software versioning details",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo" },
-        { "name": "ver_major", "offset": 1, "type": "uint8", "desc": "Major version" },
-        { "name": "ver_minor", "offset": 2, "type": "uint8", "desc": "Minor version" },
-        { "name": "ver_patch", "offset": 3, "type": "uint8", "desc": "Patch version" },
-        { "name": "git_hash", "offset": 4, "type": "string", "size": 8, "desc": "Git commit short hash" },
-        { "name": "build_date", "offset": 12, "type": "string", "size": 16, "desc": "Build timestamp (YYYYMMDD-HHMM)" },
-        { "name": "hw_rev", "offset": 28, "type": "uint8", "desc": "Hardware revision ID" },
-        { "name": "serial_num", "offset": 29, "type": "string", "size": 16, "desc": "Unique Device Serial Number" }
+      "command_name": "DEVICE_INFO",
+      "command_id": "0xA1",
+      "direction": "GET+SET",
+      "desc": "Read device build info strings in 56-byte chunks",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID (0xA1)" },
+        { "name": "size",        "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "field_idx",   "offset": 2, "type": "uint8", "desc": "0=version, 1=git_hash, 2=build_time, 3=device_name, 4=attr_hex_file" },
+        { "name": "chunk_idx",   "offset": 3, "type": "uint8", "desc": "Chunk index (starts at 0)" }
+      ],
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xA1)" },
+        { "name": "field_idx",   "offset": 1, "type": "uint8",  "desc": "Requested field index" },
+        { "name": "total_len",   "offset": 2, "type": "uint16", "desc": "Total string length (LE)" },
+        { "name": "chunk_data",  "offset": 4, "type": "char",   "size": 56, "desc": "String data chunk (56 bytes)" }
       ]
     },
     {
-      "name": "SYSTEM_STATUS",
-      "id_hint": "0xA2",
-      "desc": "Real-time health monitoring",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo" },
-        { "name": "cpu_temp", "offset": 1, "type": "int8", "unit": "Celsius", "desc": "SoC Temperature" },
-        { "name": "cpu_usage", "offset": 2, "type": "uint8", "unit": "Percent", "desc": "CPU Load" },
-        { "name": "mem_usage", "offset": 3, "type": "uint8", "unit": "Percent", "desc": "Memory Load" },
-        { "name": "uptime", "offset": 4, "type": "uint32", "unit": "Seconds", "desc": "System uptime (Little-Endian)" },
-        { "name": "v_core", "offset": 8, "type": "uint16", "unit": "mV", "desc": "Core voltage" },
-        { "name": "npu_status", "offset": 10, "type": "uint8", "desc": "AI Accelerator state (0:Idle, 1:Busy)" }
+      "command_name": "SYSTEM_INFO",
+      "command_id": "0xA2",
+      "direction": "GET+SET",
+      "desc": "Read live system information (17 fields) in 56-byte chunks",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID (0xA2)" },
+        { "name": "size",        "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "field_idx",   "offset": 2, "type": "uint8", "desc": "0=CPU model, 1=CPU cores, 2=CPU freq, 3=Mem total, 4=Mem free, 5=Mem usage%, 6=Uptime, 7=Load avg, 8=Kernel ver (short), 9=CPU temp, 10=Kernel full, 11=UTS ver, 12=Compiled by, 13=Compiled host, 14=GCC ver, 15=Build timestamp, 16=Machine arch" },
+        { "name": "chunk_idx",   "offset": 3, "type": "uint8", "desc": "Chunk index (starts at 0)" }
+      ],
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xA2)" },
+        { "name": "field_idx",   "offset": 1, "type": "uint8",  "desc": "Requested field index" },
+        { "name": "total_len",   "offset": 2, "type": "uint16", "desc": "Total string length (LE)" },
+        { "name": "chunk_data",  "offset": 4, "type": "char",   "size": 56, "desc": "String data chunk (56 bytes)" }
+      ]
+    },
+    {
+      "command_name": "SYSTEM_REBOOT",
+      "command_id": "0x72",
+      "direction": "SET",
+      "desc": "Reboot the device",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x72)" }
+      ]
+    },
+    {
+      "command_name": "POWER_STATE",
+      "command_id": "0x82",
+      "direction": "GET+SET",
+      "desc": "Query or control device power state",
+      "set_fields": [
+        { "name": "echo",   "offset": 0, "type": "uint8", "desc": "Command ID (0x82)" },
+        { "name": "size",   "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "action", "offset": 2, "type": "uint8", "desc": "0=Query, 1=Resume/Wake, 2=Force standby/pause" }
+      ],
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID echo (0x82)" },
+        { "name": "size",        "offset": 1, "type": "uint8", "desc": "Payload size (2)" },
+        { "name": "power_state", "offset": 2, "type": "uint8", "desc": "0=Active, 1=Standby, 2=Sleep" },
+        { "name": "is_paused",   "offset": 3, "type": "uint8", "desc": "0=Running, 1=Paused" }
+      ]
+    },
+    {
+      "command_name": "SOFTWARE_WAKE",
+      "command_id": "0x85",
+      "direction": "GET+SET",
+      "desc": "Wake device from standby/sleep via software button",
+      "set_fields": [
+        { "name": "echo",   "offset": 0, "type": "uint8", "desc": "Command ID (0x85)" },
+        { "name": "size",   "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "action", "offset": 2, "type": "uint8", "desc": "1=Wake to active" }
+      ],
+      "get_fields": [
+        { "name": "echo",            "offset": 0, "type": "uint8", "desc": "Command ID echo (0x85)" },
+        { "name": "size",            "offset": 1, "type": "uint8", "desc": "Payload size (3)" },
+        { "name": "power_state",     "offset": 2, "type": "uint8", "desc": "0=Active, 1=Standby, 2=Sleep" },
+        { "name": "is_paused",       "offset": 3, "type": "uint8", "desc": "0=Running, 1=Paused" },
+        { "name": "sw_wake_pending", "offset": 4, "type": "uint8", "desc": "Always 0 (edge-triggered)" }
       ]
     }
   ]

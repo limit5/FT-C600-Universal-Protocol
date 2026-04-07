@@ -1,55 +1,234 @@
 {
   "module": "Imaging",
-  "version": "2.1",
+  "version": "3.0",
+  "description": "LED control, auto exposure, image processing pipeline, and BIO diagnostics",
   "payload_size": 60,
   "commands": [
     {
+      "command_name": "FILL_LIGHT_OVERRIDE",
+      "command_id": "0x70",
+      "direction": "GET+SET",
+      "desc": "Debug override for fill light LED (bypasses scan flow control)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID (0x70)" },
+        { "name": "size",        "offset": 1, "type": "uint8", "desc": "Payload size (0=query only, >0=change)" },
+        { "name": "override_en", "offset": 2, "type": "uint8", "desc": "0=Scan flow, 1=Debug override" },
+        { "name": "led_on",      "offset": 3, "type": "uint8", "desc": "0=OFF, 1=ON" }
+      ],
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID echo (0x70)" },
+        { "name": "override_en", "offset": 1, "type": "uint8", "desc": "0=Scan flow, 1=Debug override" },
+        { "name": "led_on",      "offset": 2, "type": "uint8", "desc": "Current LED state" },
+        { "name": "pwm_active",  "offset": 3, "type": "uint8", "desc": "Fill light PWM active" }
+      ]
+    },
+    {
+      "command_name": "AIMING_LED_OVERRIDE",
+      "command_id": "0x71",
+      "direction": "GET+SET",
+      "desc": "Debug override for aiming laser LED",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID (0x71)" },
+        { "name": "size",        "offset": 1, "type": "uint8", "desc": "Payload size (0=query only, >0=change)" },
+        { "name": "override_en", "offset": 2, "type": "uint8", "desc": "0=Scan flow, 1=Debug override" },
+        { "name": "led_on",      "offset": 3, "type": "uint8", "desc": "0=OFF, 1=ON" }
+      ],
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8", "desc": "Command ID echo (0x71)" },
+        { "name": "override_en", "offset": 1, "type": "uint8", "desc": "0=Scan flow, 1=Debug override" },
+        { "name": "led_on",      "offset": 2, "type": "uint8", "desc": "Current LED state" },
+        { "name": "gpio_state",  "offset": 3, "type": "uint8", "desc": "Actual GPIO pin readback" }
+      ]
+    },
+    {
+      "command_name": "FILL_LIGHT_CURRENT",
+      "command_id": "0x81",
+      "direction": "GET+SET",
+      "desc": "Set or query fill light current intensity level",
+      "set_fields": [
+        { "name": "echo",  "offset": 0, "type": "uint8", "desc": "Command ID (0x81)" },
+        { "name": "size",  "offset": 1, "type": "uint8", "desc": "Payload size (0=query only)" },
+        { "name": "level", "offset": 2, "type": "uint8", "desc": "0=OFF, 1=10mA, 2=30mA, 3=50mA (>3 treated as legacy brightness %, mapped to nearest level)" }
+      ],
+      "get_fields": [
+        { "name": "echo",          "offset": 0, "type": "uint8", "desc": "Command ID echo (0x81)" },
+        { "name": "size",          "offset": 1, "type": "uint8", "desc": "Payload size (7)" },
+        { "name": "current_level", "offset": 2, "type": "uint8", "desc": "0=OFF, 1=10mA, 2=30mA, 3=50mA" },
+        { "name": "reserved",      "offset": 3, "type": "uint8", "size": 5, "desc": "Reserved (zeros)" },
+        { "name": "level_echo",    "offset": 8, "type": "uint8", "desc": "Level echo" }
+      ]
+    },
+    {
       "command_name": "AE_STATUS",
       "command_id": "0x83",
-      "desc": "Auto Exposure real-time status and manual overrides",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x83)" },
-        { "name": "ae_enable", "offset": 1, "type": "uint8", "desc": "0: Manual, 1: Auto" },
-        { "name": "target_luma", "offset": 2, "type": "uint8", "desc": "Target luminance level" },
-        { "name": "current_luma", "offset": 3, "type": "uint8", "desc": "Measured average luminance" },
-        { "name": "intt_us", "offset": 8, "type": "uint32", "desc": "Integration time in microseconds (LE)" },
-        { "name": "analog_gain", "offset": 12, "type": "uint16", "desc": "Sensor analog gain (U.6 format, LE)" },
-        { "name": "digital_gain", "offset": 14, "type": "uint16", "desc": "ISP digital gain (U.8 format, LE)" }
+      "direction": "GET+SET",
+      "desc": "Read full ISP auto-exposure runtime status",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x83) — query trigger only" }
+      ],
+      "get_fields": [
+        { "name": "echo",              "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x83)" },
+        { "name": "size",              "offset": 1,  "type": "uint8",  "desc": "Payload size (56)" },
+        { "name": "target_luma",       "offset": 2,  "type": "uint8",  "desc": "Target luminance (0-255)" },
+        { "name": "current_luma",      "offset": 3,  "type": "uint8",  "desc": "Measured average luminance (0-255)" },
+        { "name": "error_luma",        "offset": 4,  "type": "int16",  "desc": "Error luminance (S.4 format, LE)" },
+        { "name": "curr_piris",        "offset": 6,  "type": "uint16", "desc": "Current P-Iris value (LE)" },
+        { "name": "curr_intt",         "offset": 8,  "type": "uint32", "desc": "Integration time in microseconds (LE)" },
+        { "name": "curr_again",        "offset": 12, "type": "uint16", "desc": "Sensor analog gain (U.6 format, LE)" },
+        { "name": "curr_dgain",        "offset": 14, "type": "uint16", "desc": "ISP digital gain (U.6 format, LE)" },
+        { "name": "curr_total_gain",   "offset": 16, "type": "uint32", "desc": "Total gain (U.6 format, LE)" },
+        { "name": "curr_intt_line",    "offset": 20, "type": "uint16", "desc": "Exposure in sensor lines (LE)" },
+        { "name": "curr_frame_height", "offset": 22, "type": "uint16", "desc": "Current frame height (LE)" },
+        { "name": "ev",                "offset": 24, "type": "uint16", "desc": "Exposure value (LE)" },
+        { "name": "curr_node_id",      "offset": 26, "type": "uint8",  "desc": "AE route node (0-15)" },
+        { "name": "op_status",         "offset": 27, "type": "uint8",  "desc": "0=Stopped, 1=Running" },
+        { "name": "exp_param",         "offset": 28, "type": "uint32", "desc": "Exposure parameter (LE)" },
+        { "name": "act_intt_max",      "offset": 32, "type": "uint16", "desc": "Active integration time max (LE)" },
+        { "name": "act_again_max",     "offset": 34, "type": "uint16", "desc": "Active analog gain max (LE)" },
+        { "name": "act_dgain_max",     "offset": 36, "type": "uint16", "desc": "Active digital gain max (LE)" },
+        { "name": "sensor_intt_max",   "offset": 38, "type": "uint16", "desc": "Sensor integration time max (LE)" },
+        { "name": "sensor_intt_min",   "offset": 40, "type": "uint16", "desc": "Sensor integration time min (LE)" },
+        { "name": "sensor_again_max",  "offset": 42, "type": "uint16", "desc": "Sensor analog gain max (LE)" },
+        { "name": "sensor_again_min",  "offset": 44, "type": "uint16", "desc": "Sensor analog gain min (LE)" },
+        { "name": "dgain_max",         "offset": 46, "type": "uint16", "desc": "Digital gain max (LE)" },
+        { "name": "dgain_min",         "offset": 48, "type": "uint16", "desc": "Digital gain min (LE)" },
+        { "name": "reserved",          "offset": 50, "type": "uint8",  "size": 10, "desc": "Reserved (zeros)" }
       ]
     },
     {
-      "command_name": "FILL_LIGHT_CTRL",
-      "command_id": "0x70",
-      "desc": "Illumination and Aimer LED control",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x70)" },
-        { "name": "led_mode", "offset": 1, "type": "uint8", "desc": "0: Off, 1: On, 2: Flash, 3: Auto" },
-        { "name": "intensity", "offset": 2, "type": "uint8", "desc": "PWM brightness (0-255)" },
-        { "name": "aimer_enable", "offset": 3, "type": "uint8", "desc": "0: Off, 1: On" }
+      "command_name": "AE_STRATEGY",
+      "command_id": "0x84",
+      "direction": "GET+SET",
+      "desc": "Select and configure AE metering strategies",
+      "sub_commands": [
+        { "sub_id": "0x00", "name": "SELECT_STRATEGY",   "desc": "Select AE strategy",           "params": [{ "name": "strategy_id", "offset": 3, "type": "uint8" }] },
+        { "sub_id": "0x01", "name": "SET_GRAY_TARGET",   "desc": "Set neutral gray target luma",  "params": [{ "name": "target_luma", "offset": 3, "type": "uint8", "desc": "0-255" }] },
+        { "sub_id": "0x02", "name": "SET_BARCODE_PARAMS","desc": "Set barcode threshold params",  "params": [{ "name": "bar_low", "offset": 3, "type": "uint8" }, { "name": "bar_high", "offset": 4, "type": "uint8" }] },
+        { "sub_id": "0x03", "name": "STOP_ALL",          "desc": "Stop all AE strategies" },
+        { "sub_id": "0x04", "name": "SET_HIST_ROI",      "desc": "Set histogram ROI params",      "params": [{ "name": "roi_w", "offset": 3, "type": "uint16" }, { "name": "roi_h", "offset": 5, "type": "uint16" }, { "name": "p90_target", "offset": 7, "type": "uint8" }] },
+        { "sub_id": "0x05", "name": "SET_AE_WAIT_MODE",  "desc": "Set AE wait mode",              "params": [{ "name": "mode", "offset": 3, "type": "uint8", "desc": "0=TARGET_LUMA, 1=DELTA_STABLE" }] },
+        { "sub_id": "0x06", "name": "SET_SPOT_PARAMS",   "desc": "Set spot metering params",      "params": [{ "name": "spot_size", "offset": 3, "type": "uint8" }, { "name": "spot_target", "offset": 4, "type": "uint8" }] },
+        { "sub_id": "0x07", "name": "SET_CW_WEIGHT",     "desc": "Set center-weighted mode",      "params": [{ "name": "cw_mode", "offset": 3, "type": "uint8", "desc": "0=Gaussian, 1=Aiming-Spot" }] },
+        { "sub_id": "0x08", "name": "SET_FILL_COWORK",   "desc": "Enable/disable fill light AE co-work", "params": [{ "name": "enable", "offset": 3, "type": "uint8", "desc": "0=Disable, 1=Enable" }] }
+      ],
+      "set_fields": [
+        { "name": "echo",    "offset": 0, "type": "uint8", "desc": "Command ID (0x84)" },
+        { "name": "size",    "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "sub_cmd", "offset": 2, "type": "uint8", "desc": "Sub-command (0x00-0x08)" }
+      ],
+      "get_fields": [
+        { "name": "echo",                  "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x84)" },
+        { "name": "size",                  "offset": 1,  "type": "uint8",  "desc": "Payload size (34)" },
+        { "name": "strategy_id",           "offset": 2,  "type": "uint8",  "desc": "Current strategy ID" },
+        { "name": "name_len",              "offset": 3,  "type": "uint8",  "desc": "Strategy name length (max 20)" },
+        { "name": "strategy_name",         "offset": 4,  "type": "char",   "size": 20, "desc": "Strategy name string" },
+        { "name": "gray_target",           "offset": 24, "type": "uint8",  "desc": "Neutral gray target luma" },
+        { "name": "bar_low",               "offset": 25, "type": "uint8",  "desc": "Barcode low threshold" },
+        { "name": "bar_high",              "offset": 26, "type": "uint8",  "desc": "Barcode high threshold" },
+        { "name": "bar_mid",               "offset": 27, "type": "uint8",  "desc": "Barcode midpoint" },
+        { "name": "roi_w",                 "offset": 28, "type": "uint16", "desc": "ROI width (LE)" },
+        { "name": "roi_h",                 "offset": 30, "type": "uint16", "desc": "ROI height (LE)" },
+        { "name": "p90_target",            "offset": 32, "type": "uint8",  "desc": "P90 target" },
+        { "name": "ae_wait_mode",          "offset": 33, "type": "uint8",  "desc": "0=TARGET_LUMA, 1=DELTA_STABLE" },
+        { "name": "spot_size",             "offset": 34, "type": "uint8",  "desc": "Spot metering size" },
+        { "name": "spot_target",           "offset": 35, "type": "uint8",  "desc": "Spot metering target" },
+        { "name": "cw_weight_mode",        "offset": 36, "type": "uint8",  "desc": "0=Gaussian, 1=Aiming-Spot" },
+        { "name": "fill_cowork_enabled",   "offset": 37, "type": "uint8",  "desc": "Fill light AE co-work enabled" },
+        { "name": "fill_cowork_duty",      "offset": 38, "type": "uint8",  "desc": "Fill co-work current duty" },
+        { "name": "fill_cowork_intensity", "offset": 39, "type": "uint8",  "desc": "Fill co-work current intensity" }
       ]
     },
     {
-      "command_name": "GI_V5_CONFIG",
+      "command_name": "AE_WAIT_LOG",
+      "command_id": "0x86",
+      "direction": "GET+SET",
+      "desc": "Read AE wait diagnostic log",
+      "note": "GET payload packed by ae_wait_log_pack() into 60 bytes",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x86) — query trigger" }
+      ],
+      "get_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x86)" },
+        { "name": "data", "offset": 1, "type": "uint8", "size": 59, "desc": "AE wait log data — format defined by ae_wait_log_pack()" }
+      ]
+    },
+    {
+      "command_name": "IMG_PROC_CONFIG",
       "command_id": "0x97",
-      "desc": "GI v5 Engine image processing flags and tuning",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x97)" },
-        { "name": "sub_cmd", "offset": 1, "type": "uint8", "desc": "Sub-command (e.g., 0x0D for Flags)" },
-        { "name": "gi_flags", "offset": 2, "type": "uint16", "desc": "Bitwise: b0:VIGCAL, b7:DIST, b8:PICKLIST (LE)" },
-        { "name": "bio_modulation", "offset": 4, "type": "uint8", "desc": "Bio-modulation strength for scanning" },
-        { "name": "ce_lut_factor", "offset": 5, "type": "uint8", "desc": "Contrast Enhancement LUT factor" }
+      "direction": "GET+SET",
+      "desc": "Image processing pipeline: preprocess, WDR, BIO, beep, CE, and GI engine flags",
+      "sub_commands": [
+        { "sub_id": "0x01", "name": "PREPROCESS_MODE",  "desc": "Set preprocess mode",      "params": [{ "name": "mode",    "offset": 3, "type": "uint8", "desc": "0=Off, 1=Stretch, 2=Binarize, 3=Unsharp" }] },
+        { "sub_id": "0x02", "name": "WDR_LTM",          "desc": "WDR/LTM control",          "params": [{ "name": "enable",  "offset": 3, "type": "uint8" }, { "name": "level", "offset": 4, "type": "uint8", "desc": "0-10" }] },
+        { "sub_id": "0x03", "name": "BIO_MODE",         "desc": "BIO mode control",          "params": [{ "name": "mode",    "offset": 3, "type": "uint8", "desc": "0=Off, 1=Iterative, 2=SingleShot" }] },
+        { "sub_id": "0x04", "name": "PU_DEFAULTS",      "desc": "Save/restore PU defaults",  "params": [{ "name": "action",  "offset": 3, "type": "uint8", "desc": "0=Save, 1=Restore" }] },
+        { "sub_id": "0x05", "name": "BIO_LOG_READ",     "desc": "Read BIO log chunk",        "params": [{ "name": "chunk_idx", "offset": 3, "type": "uint16" }] },
+        { "sub_id": "0x06", "name": "CE_FLAGS",         "desc": "Contrast Enhancement flags", "params": [{ "name": "flags",   "offset": 3, "type": "uint8", "desc": "bit0=Unsharp, bit1=LUT, bit2=Adaptive, bit3=Gamma" }] },
+        { "sub_id": "0x07", "name": "CE_LUT_FACTOR",    "desc": "CE LUT factor",             "params": [{ "name": "factor",  "offset": 3, "type": "uint16", "desc": "128=1.0x, 180=1.4x, 230=1.8x (LE)" }] },
+        { "sub_id": "0x08", "name": "GI_V1_FLAGS",      "desc": "GI v1 engine flags",        "params": [{ "name": "flags",   "offset": 3, "type": "uint8", "desc": "bit0=Specular, bit1=1D Proj, bit2=AdaptThresh, bit3=NEON" }] },
+        { "sub_id": "0x09", "name": "GI_V2_FLAGS",      "desc": "GI Gen2 engine flags",      "params": [{ "name": "flags",   "offset": 3, "type": "uint16", "desc": "LE" }] },
+        { "sub_id": "0x0A", "name": "BEEP_AUDIO",       "desc": "Beep audio control",        "params": [{ "name": "enable",  "offset": 3, "type": "uint8" }, { "name": "volume", "offset": 4, "type": "uint8", "desc": "0-4" }] },
+        { "sub_id": "0x0B", "name": "GI_V3_FLAGS",      "desc": "GI Pro v3 engine flags",    "params": [{ "name": "flags",   "offset": 3, "type": "uint16", "desc": "LE" }] },
+        { "sub_id": "0x0C", "name": "GI_V4_FLAGS",      "desc": "GI v4 engine flags",        "params": [{ "name": "flags",   "offset": 3, "type": "uint32", "desc": "LE" }] },
+        { "sub_id": "0x0D", "name": "GI_V5_FLAGS",      "desc": "GI v5 engine flags",        "params": [{ "name": "flags",   "offset": 3, "type": "uint16", "desc": "9-bit flags (LE)" }] }
+      ],
+      "set_fields": [
+        { "name": "echo",    "offset": 0, "type": "uint8", "desc": "Command ID (0x97)" },
+        { "name": "size",    "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "sub_cmd", "offset": 2, "type": "uint8", "desc": "Sub-command (0x01-0x0D)" }
+      ],
+      "get_fields_normal": [
+        { "name": "echo",            "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x97)" },
+        { "name": "size",            "offset": 1,  "type": "uint8",  "desc": "Payload size (15)" },
+        { "name": "preprocess_mode", "offset": 2,  "type": "uint8",  "desc": "0=Off, 1=Stretch, 2=Binarize, 3=Unsharp" },
+        { "name": "wdr_enable",      "offset": 3,  "type": "uint8",  "desc": "WDR enabled" },
+        { "name": "wdr_level",       "offset": 4,  "type": "uint8",  "desc": "WDR level (0-10)" },
+        { "name": "wdr_available",   "offset": 5,  "type": "uint8",  "desc": "WDR hardware available" },
+        { "name": "bio_mode",        "offset": 6,  "type": "uint8",  "desc": "0=Off, 1=Iterative, 2=SingleShot" },
+        { "name": "bio_fill_duty",   "offset": 7,  "type": "uint8",  "desc": "BIO fill duty (0-100)" },
+        { "name": "bio_isp_contrast","offset": 8,  "type": "uint8",  "desc": "BIO ISP contrast (0-255)" },
+        { "name": "bio_iterations",  "offset": 9,  "type": "uint8",  "desc": "BIO iteration count" },
+        { "name": "bio_locked",      "offset": 10, "type": "uint8",  "desc": "BIO locked" },
+        { "name": "bio_modulation",  "offset": 11, "type": "uint16", "desc": "BIO modulation x1000 (LE)" },
+        { "name": "bio_saturation",  "offset": 13, "type": "uint8",  "desc": "BIO saturation %" },
+        { "name": "bio_mean_luma",   "offset": 14, "type": "uint8",  "desc": "BIO mean luma (P75)" },
+        { "name": "bio_ae_target",   "offset": 15, "type": "uint8",  "desc": "BIO AE target" },
+        { "name": "bio_fill_intensity","offset": 16,"type": "uint8",  "desc": "BIO fill intensity (0-100)" },
+        { "name": "ce_flags",        "offset": 17, "type": "uint8",  "desc": "CE flags" },
+        { "name": "ce_lut_factor",   "offset": 18, "type": "uint8",  "desc": "CE LUT factor (low byte)" },
+        { "name": "gi_v1_flags",     "offset": 19, "type": "uint8",  "desc": "GI v1 flags" },
+        { "name": "gi_v2_flags",     "offset": 20, "type": "uint16", "desc": "GI v2 flags (LE)" },
+        { "name": "beep_enabled",    "offset": 22, "type": "uint8",  "desc": "Beep enabled" },
+        { "name": "beep_volume",     "offset": 23, "type": "uint8",  "desc": "Beep volume (0-4)" },
+        { "name": "gi_v3_flags",     "offset": 24, "type": "uint16", "desc": "GI v3 flags (LE)" },
+        { "name": "gi_v4_flags",     "offset": 26, "type": "uint32", "desc": "GI v4 flags (LE)" },
+        { "name": "gi_v5_flags",     "offset": 30, "type": "uint16", "desc": "GI v5 flags (LE)" }
+      ],
+      "get_fields_log_mode": [
+        { "name": "echo",           "offset": 0, "type": "uint8",  "desc": "Command ID echo (0x97)" },
+        { "name": "sub_cmd_echo",   "offset": 1, "type": "uint8",  "desc": "Sub-command echo (0x05)" },
+        { "name": "total_log_len",  "offset": 2, "type": "uint16", "desc": "Total log length (LE)" },
+        { "name": "chunk_index",    "offset": 4, "type": "uint8",  "desc": "Chunk index" },
+        { "name": "chunk_data_len", "offset": 5, "type": "uint8",  "desc": "Chunk data length (0-54)" },
+        { "name": "chunk_data",     "offset": 6, "type": "char",   "size": 54, "desc": "UTF-8 log text" }
       ]
     },
     {
-      "command_name": "RAW_IMAGE_REQ",
-      "command_id": "0x92",
-      "desc": "Trigger and manage raw image chunked transfer",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x92)" },
-        { "name": "capture_state", "offset": 1, "type": "uint8", "desc": "0:Idle, 1:Arm, 2:Ready, 3:Error" },
-        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Current chunk index to fetch (LE)" },
-        { "name": "total_chunks", "offset": 4, "type": "uint16", "desc": "Total chunks for this frame (LE)" },
-        { "name": "frame_id", "offset": 6, "type": "uint32", "desc": "Sequence ID of captured frame" }
+      "command_name": "BIO_DIAG_LOG",
+      "command_id": "0x98",
+      "direction": "GET+SET",
+      "desc": "Read BIO diagnostic log via dedicated command",
+      "set_fields": [
+        { "name": "echo",      "offset": 0, "type": "uint8",  "desc": "Command ID (0x98)" },
+        { "name": "size",      "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "chunk_idx", "offset": 2, "type": "uint16", "desc": "Chunk index (LE)" }
+      ],
+      "get_fields": [
+        { "name": "echo",           "offset": 0, "type": "uint8",  "desc": "Command ID echo (0x98)" },
+        { "name": "total_log_len",  "offset": 1, "type": "uint16", "desc": "Total log length (LE)" },
+        { "name": "chunk_index",    "offset": 3, "type": "uint8",  "desc": "Chunk index" },
+        { "name": "chunk_data_len", "offset": 4, "type": "uint8",  "desc": "Chunk data length (0-54)" },
+        { "name": "chunk_data",     "offset": 5, "type": "char",   "size": 54, "desc": "UTF-8 log text" }
       ]
     }
   ]

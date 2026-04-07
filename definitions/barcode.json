@@ -1,44 +1,121 @@
 {
   "module": "Barcode",
-  "version": "1.2",
+  "version": "3.0",
+  "description": "Barcode scanning control, trigger, and result retrieval",
   "payload_size": 60,
   "commands": [
     {
+      "command_name": "DECODER_PAUSE_STATUS",
+      "command_id": "0x0A",
+      "direction": "GET",
+      "desc": "Query whether barcode decoder is paused",
+      "get_fields": [
+        { "name": "is_paused", "offset": 0, "type": "uint8", "desc": "0=Running, 1=Paused" }
+      ]
+    },
+    {
+      "command_name": "DECODER_PAUSE",
+      "command_id": "0x0B",
+      "direction": "SET",
+      "desc": "Pause barcode decoding",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x0B)" }
+      ]
+    },
+    {
+      "command_name": "DECODER_RESUME",
+      "command_id": "0x0C",
+      "direction": "SET",
+      "desc": "Resume barcode decoding",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x0C)" }
+      ]
+    },
+    {
+      "command_name": "SCAN_MODE",
+      "command_id": "0x80",
+      "direction": "GET+SET",
+      "desc": "Set or query scanning mode",
+      "set_fields": [
+        { "name": "echo",      "offset": 0, "type": "uint8", "desc": "Command ID (0x80)" },
+        { "name": "size",      "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "scan_mode", "offset": 2, "type": "uint8", "desc": "0=Continuous, 1=SingleTrigger, 2=HoldTrigger" }
+      ],
+      "get_fields": [
+        { "name": "echo",      "offset": 0, "type": "uint8", "desc": "Command ID echo (0x80)" },
+        { "name": "size",      "offset": 1, "type": "uint8", "desc": "Payload size (1)" },
+        { "name": "scan_mode", "offset": 2, "type": "uint8", "desc": "0=Continuous, 1=SingleTrigger, 2=HoldTrigger" }
+      ]
+    },
+    {
+      "command_name": "SOFTWARE_TRIGGER",
+      "command_id": "0x93",
+      "direction": "GET+SET",
+      "desc": "Fire a single barcode scan from host",
+      "set_fields": [
+        { "name": "echo",   "offset": 0, "type": "uint8", "desc": "Command ID (0x93)" },
+        { "name": "size",   "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "action", "offset": 2, "type": "uint8", "desc": "0x01=Fire software trigger" }
+      ],
+      "get_fields": [
+        { "name": "echo",           "offset": 0, "type": "uint8", "desc": "Command ID echo (0x93)" },
+        { "name": "scan_mode",      "offset": 1, "type": "uint8", "desc": "Current scan mode" },
+        { "name": "trigger_state",  "offset": 2, "type": "uint8", "desc": "Always 0 (edge-triggered)" },
+        { "name": "trigger_source", "offset": 3, "type": "uint8", "desc": "0=None, 1=HW, 2=SW" }
+      ]
+    },
+    {
       "command_name": "BARCODE_RESULT",
       "command_id": "0x90",
-      "desc": "Fetch the primary barcode result and preview text",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x90)" },
-        { "name": "queue_count", "offset": 1, "type": "uint8", "desc": "Number of results pending in device FIFO" },
-        { "name": "seq_number", "offset": 2, "type": "uint32", "desc": "Incremental sequence ID for results (LE)" },
-        { "name": "status", "offset": 6, "type": "uint8", "desc": "0: Empty, 1: Valid Data" },
-        { "name": "format_id", "offset": 7, "type": "uint8", "desc": "Symbology ID (e.g., 0x01: QR, 0x02: EAN13)" },
-        { "name": "format_name", "offset": 8, "type": "char", "size": 15, "desc": "Human readable format string" },
-        { "name": "total_len", "offset": 23, "type": "uint16", "desc": "Total barcode text length (LE)" },
-        { "name": "text_preview", "offset": 25, "type": "char", "size": 34, "desc": "First 34 bytes of barcode data" },
-        { "name": "flags", "offset": 59, "type": "uint8", "desc": "bit0: has_more_chunks, bit1: scan_active" }
+      "direction": "GET+SET",
+      "desc": "Queue control and primary result retrieval with text preview",
+      "set_fields": [
+        { "name": "echo",   "offset": 0, "type": "uint8", "desc": "Command ID (0x90)" },
+        { "name": "size",   "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "action", "offset": 2, "type": "uint8", "desc": "0x00=Query, 0x01=Dequeue, 0x02=Flush, 0x03=Snapshot" }
+      ],
+      "get_fields": [
+        { "name": "echo",         "offset": 0,  "type": "uint8",  "desc": "Command ID echo (0x90)" },
+        { "name": "queue_count",  "offset": 1,  "type": "uint8",  "desc": "Number of results pending in device FIFO" },
+        { "name": "seq_number",   "offset": 2,  "type": "uint32", "desc": "Incremental sequence ID (LE)" },
+        { "name": "status",       "offset": 6,  "type": "uint8",  "desc": "0=Empty, 1=Valid data" },
+        { "name": "format_len",   "offset": 7,  "type": "uint8",  "desc": "Format string length" },
+        { "name": "format_name",  "offset": 8,  "type": "char",   "size": 15, "desc": "Symbology name (null-terminated)" },
+        { "name": "text_len",     "offset": 23, "type": "uint16", "desc": "Total barcode text length (LE)" },
+        { "name": "text_preview", "offset": 25, "type": "char",   "size": 34, "desc": "First 34 bytes of barcode data" },
+        { "name": "flags",        "offset": 59, "type": "uint8",  "desc": "bit0=has_more_chunks, bit1=scan_active" }
       ]
     },
     {
       "command_name": "BARCODE_EXT_TEXT",
       "command_id": "0x91",
-      "desc": "Retrieve extended barcode text for results > 34 bytes",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x91)" },
-        { "name": "chunk_index", "offset": 1, "type": "uint8", "desc": "Current chunk index (starts at 1)" },
-        { "name": "chunk_data", "offset": 2, "type": "char", "size": 58, "desc": "58 bytes of extended text data" }
+      "direction": "GET+SET",
+      "desc": "Read full barcode text in 54-byte chunks (for results >34 bytes)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0x91)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Chunk index to fetch (LE)" }
+      ],
+      "get_fields": [
+        { "name": "echo",           "offset": 0, "type": "uint8",  "desc": "Command ID echo (0x91)" },
+        { "name": "chunk_index",    "offset": 1, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "total_text_len", "offset": 3, "type": "uint16", "desc": "Total text length (LE)" },
+        { "name": "chunk_size",     "offset": 5, "type": "uint8",  "desc": "Bytes in this chunk (0-54)" },
+        { "name": "text_data",      "offset": 6, "type": "char",   "size": 54, "desc": "Text data (offset = chunk_index * 54)" }
       ]
     },
     {
-      "command_name": "SCAN_MODE_SET",
-      "command_id": "0x80",
-      "desc": "Configure scanning behavior and engine state",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x80)" },
-        { "name": "mode", "offset": 1, "type": "uint8", "desc": "0:Manual, 1:Trigger, 2:Continuous, 3:Presentation" },
-        { "name": "beep_on_done", "offset": 2, "type": "uint8", "desc": "0:Silent, 1:Beep on successful decode" },
-        { "name": "aimer_mode", "offset": 3, "type": "uint8", "desc": "0:Off, 1:On, 2:Flash" },
-        { "name": "timeout_ms", "offset": 4, "type": "uint16", "desc": "Decode session timeout in ms (LE)" }
+      "command_name": "BARCODE_EXT_RESULT",
+      "command_id": "0x95",
+      "direction": "GET+SET",
+      "desc": "Extended barcode result with corner coordinates and ROI metadata (v2+ only)",
+      "note": "Payload filled by roi_capture_fill_ext_result_response(); requires UVC_ALGORITHM_USE_STATIC_LIBRARY_VERSION >= 2",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x95)" }
+      ],
+      "get_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x95)" },
+        { "name": "data", "offset": 1, "type": "uint8", "size": 59, "desc": "ROI capture result (corners, metadata) — format defined by roi_capture module" }
       ]
     }
   ]

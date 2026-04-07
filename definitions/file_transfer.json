@@ -1,51 +1,202 @@
 {
   "module": "FileTransfer",
-  "version": "1.0",
+  "version": "3.0",
+  "description": "File upload/download, string transfer, and legacy bulk data protocols",
   "payload_size": 60,
   "commands": [
     {
-      "command_name": "STRING_XFER",
+      "command_name": "FILE_PREPARE",
       "command_id": "0xBA",
-      "desc": "Transfer long strings (JSON, Logs) in 56-byte chunks",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0xBA)" },
-        { "name": "sub_cmd", "offset": 1, "type": "uint8", "desc": "0:Start, 1:Data, 2:End, 3:Cancel" },
-        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Current chunk sequence (LE)" },
-        { "name": "payload", "offset": 4, "type": "char", "size": 56, "desc": "String content chunk" }
+      "direction": "SET",
+      "desc": "Reset all transfer state and prepare for new file upload",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xBA)" }
       ]
     },
     {
-      "command_name": "FILE_UP_HEADER",
-      "command_id": "0xBB",
-      "desc": "Initiate file upload from Host to Device (e.g., Firmware/LUT)",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0xBB)" },
-        { "name": "file_type", "offset": 1, "type": "uint8", "desc": "1:FW, 2:LUT, 3:Config" },
-        { "name": "total_size", "offset": 4, "type": "uint32", "desc": "Total file size in bytes (LE)" },
-        { "name": "checksum", "offset": 8, "type": "uint32", "desc": "CRC32 of the entire file (LE)" },
-        { "name": "file_name", "offset": 12, "type": "char", "size": 32, "desc": "Target filename string" }
-      ]
-    },
-    {
-      "command_name": "FILE_DATA_PACKET",
-      "command_id": "0xBD",
-      "desc": "General purpose data packet for chunked file transfer",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xBD)" },
-        { "name": "session_id", "offset": 1, "type": "uint8", "desc": "Identifier for concurrent transfers" },
-        { "name": "chunk_index", "offset": 2, "type": "uint32", "desc": "Current data offset / index (LE)" },
-        { "name": "data", "offset": 6, "type": "uint8", "size": 54, "desc": "Raw binary data payload" }
-      ]
-    },
-    {
-      "command_name": "FILE_DN_REQ",
+      "command_name": "FILE_HEADER",
       "command_id": "0xBC",
-      "desc": "Request file download from Device to Host (e.g., Crash Log)",
-      "fields": [
-        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0xBC)" },
-        { "name": "file_id", "offset": 1, "type": "uint16", "desc": "ID of the file to retrieve" },
-        { "name": "request_offset", "offset": 4, "type": "uint32", "desc": "Seek offset in file (LE)" },
-        { "name": "request_size", "offset": 8, "type": "uint16", "desc": "Number of bytes requested" }
+      "direction": "SET",
+      "desc": "Send file metadata (type, size, CRC, filename)",
+      "set_fields": [
+        { "name": "echo",           "offset": 0,  "type": "uint8",  "desc": "Command ID (0xBC)" },
+        { "name": "size",           "offset": 1,  "type": "uint8",  "desc": "Payload size" },
+        { "name": "file_type",      "offset": 2,  "type": "uint8",  "desc": "1=ISP Hex, 2=ISP LSC, 3=Algorithm Lib, 4=Firmware, 5=Generic" },
+        { "name": "file_size",      "offset": 3,  "type": "uint32", "desc": "Total file size in bytes (LE)" },
+        { "name": "crc32",          "offset": 7,  "type": "uint32", "desc": "CRC32 of entire file (LE)" },
+        { "name": "filename_len",   "offset": 11, "type": "uint32", "desc": "Total filename length (LE)" },
+        { "name": "filename_start", "offset": 15, "type": "char",   "size": 45, "desc": "First 45 bytes of filename" }
+      ]
+    },
+    {
+      "command_name": "FILE_DATA_BLOCK",
+      "command_id": "0xBD",
+      "direction": "SET",
+      "desc": "Send file data in chunks",
+      "set_fields": [
+        { "name": "echo",         "offset": 0, "type": "uint8",  "desc": "Command ID (0xBD)" },
+        { "name": "size",         "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "packet_index", "offset": 2, "type": "uint32", "desc": "Packet index (LE)" },
+        { "name": "chunk_len",    "offset": 6, "type": "uint8",  "desc": "Data length in this chunk (max 53)" },
+        { "name": "data",         "offset": 7, "type": "uint8",  "size": 53, "desc": "Raw file data" }
+      ]
+    },
+    {
+      "command_name": "FILE_COMPLETE",
+      "command_id": "0xBE",
+      "direction": "SET",
+      "desc": "Signal transfer complete; triggers CRC verification and file action (ISP hex update, LSC save, algo lib update, FW update, generic save)",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xBE)" }
+      ]
+    },
+    {
+      "command_name": "FILENAME_CONTINUATION",
+      "command_id": "0xBF",
+      "direction": "SET",
+      "desc": "Send remaining filename bytes for names >45 chars",
+      "set_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID (0xBF)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "name_offset", "offset": 2, "type": "uint16", "desc": "Byte offset within filename (LE)" },
+        { "name": "chunk_size",  "offset": 4, "type": "uint8",  "desc": "Bytes in this chunk" },
+        { "name": "name_data",   "offset": 5, "type": "char",   "size": 55, "desc": "Filename continuation data" }
+      ]
+    },
+    {
+      "command_name": "STRING_HEADER",
+      "command_id": "0xD1",
+      "direction": "SET",
+      "desc": "Initialize a string transfer session (e.g., config overrides)",
+      "set_fields": [
+        { "name": "echo",        "offset": 0,  "type": "uint8",  "desc": "Command ID (0xD1)" },
+        { "name": "size",        "offset": 1,  "type": "uint8",  "desc": "Payload size" },
+        { "name": "uid",         "offset": 2,  "type": "uint8",  "desc": "String UID: 0x01=Override hex, 0x02=Apply hex" },
+        { "name": "string_len",  "offset": 3,  "type": "uint32", "desc": "Expected string length (LE)" },
+        { "name": "expected_crc","offset": 7,  "type": "uint32", "desc": "Expected CRC32 (LE)" }
+      ]
+    },
+    {
+      "command_name": "STRING_CHUNK",
+      "command_id": "0xD2",
+      "direction": "SET",
+      "desc": "Send string data in chunks",
+      "set_fields": [
+        { "name": "echo",       "offset": 0, "type": "uint8",  "desc": "Command ID (0xD2)" },
+        { "name": "size",       "offset": 1, "type": "uint8",  "desc": "Payload size" },
+        { "name": "uid",        "offset": 2, "type": "uint8",  "desc": "String UID (must match header)" },
+        { "name": "offset",     "offset": 3, "type": "uint16", "desc": "Byte offset within string (LE)" },
+        { "name": "chunk_size", "offset": 5, "type": "uint8",  "desc": "Bytes in this chunk" },
+        { "name": "data",       "offset": 6, "type": "char",   "size": 54, "desc": "String data" }
+      ]
+    },
+    {
+      "command_name": "STRING_VERIFY",
+      "command_id": "0xDE",
+      "direction": "SET",
+      "desc": "Finalize and CRC-verify transferred string; UID 0x02 triggers config.ini update",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xDE)" },
+        { "name": "size", "offset": 1, "type": "uint8", "desc": "Payload size" },
+        { "name": "uid",  "offset": 2, "type": "uint8", "desc": "String UID" }
+      ]
+    },
+    {
+      "command_name": "HEX_FILE_LIST",
+      "command_id": "0x4C",
+      "direction": "SET",
+      "desc": "Scan hex folder and build file list packet for bulk read",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0x4C)" }
+      ]
+    },
+    {
+      "command_name": "LARGE_BUFFER_OFFSET",
+      "command_id": "0x1F",
+      "direction": "GET+SET",
+      "desc": "Set large buffer read pointer offset; GET triggers chunk read from g_packet_data",
+      "set_fields": [
+        { "name": "echo",   "offset": 0, "type": "uint8", "desc": "Command ID (0x1F)" },
+        { "name": "offset", "offset": 2, "type": "uint8", "desc": "Buffer offset value" }
+      ],
+      "get_fields": [
+        { "name": "data", "offset": 0, "type": "uint8", "size": 60, "desc": "Chunk data from XU_ReadChunk_Handler" }
+      ]
+    },
+    {
+      "command_name": "BULK_CH1_TRIGGER",
+      "command_id": "0xEA",
+      "direction": "GET+SET",
+      "desc": "Prepare bulk data (channel 1) for host retrieval",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xEA) — sets data ready" }
+      ],
+      "get_fields": [
+        { "name": "echo",       "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xEA)" },
+        { "name": "size",       "offset": 1, "type": "uint8",  "desc": "Payload size (5)" },
+        { "name": "total_size", "offset": 2, "type": "uint32", "desc": "Total data size in bytes (LE)" },
+        { "name": "is_ready",   "offset": 6, "type": "uint8",  "desc": "0=Not ready, 1=Ready" }
+      ]
+    },
+    {
+      "command_name": "BULK_CH1_SET_INDEX",
+      "command_id": "0xEB",
+      "direction": "SET",
+      "desc": "Set chunk read index for channel 1 bulk read",
+      "set_fields": [
+        { "name": "echo",       "offset": 0, "type": "uint8",  "desc": "Command ID (0xEB)" },
+        { "name": "read_index", "offset": 2, "type": "uint16", "desc": "Chunk index (LE)" }
+      ]
+    },
+    {
+      "command_name": "BULK_CH1_READ",
+      "command_id": "0xEC",
+      "direction": "GET",
+      "desc": "Read bulk data chunk at current index (channel 1)",
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xEC)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size (58)" },
+        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "send_size",   "offset": 4, "type": "uint8",  "desc": "Bytes in this chunk (max 55)" },
+        { "name": "data",        "offset": 5, "type": "uint8",  "size": 55, "desc": "Data at offset = index * 55" }
+      ]
+    },
+    {
+      "command_name": "BULK_CH2_TRIGGER",
+      "command_id": "0xF1",
+      "direction": "GET+SET",
+      "desc": "Prepare barcode result text for host retrieval (channel 2)",
+      "set_fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xF1) — copies barcode format+text to channel 2 buffer" }
+      ],
+      "get_fields": [
+        { "name": "echo",       "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xF1)" },
+        { "name": "size",       "offset": 1, "type": "uint8",  "desc": "Payload size (5)" },
+        { "name": "total_size", "offset": 2, "type": "uint32", "desc": "Total data size in bytes (LE)" },
+        { "name": "is_ready",   "offset": 6, "type": "uint8",  "desc": "0=Not ready, 1=Ready" }
+      ]
+    },
+    {
+      "command_name": "BULK_CH2_SET_INDEX",
+      "command_id": "0xF2",
+      "direction": "SET",
+      "desc": "Set chunk read index for channel 2 bulk read",
+      "set_fields": [
+        { "name": "echo",       "offset": 0, "type": "uint8",  "desc": "Command ID (0xF2)" },
+        { "name": "read_index", "offset": 2, "type": "uint16", "desc": "Chunk index (LE)" }
+      ]
+    },
+    {
+      "command_name": "BULK_CH2_READ",
+      "command_id": "0xF3",
+      "direction": "GET",
+      "desc": "Read bulk data chunk at current index (channel 2)",
+      "get_fields": [
+        { "name": "echo",        "offset": 0, "type": "uint8",  "desc": "Command ID echo (0xF3)" },
+        { "name": "size",        "offset": 1, "type": "uint8",  "desc": "Payload size (58)" },
+        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Chunk index echo (LE)" },
+        { "name": "send_size",   "offset": 4, "type": "uint8",  "desc": "Bytes in this chunk (max 55)" },
+        { "name": "data",        "offset": 5, "type": "uint8",  "size": 55, "desc": "Data at offset = index * 55" }
       ]
     }
   ]
