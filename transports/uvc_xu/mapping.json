@@ -1,0 +1,107 @@
+{
+  "protocol_type": "UVC_XU",
+  "device_platform": "FT-C600",
+  "version": "2.1",
+  "xu_guid": "A3E1B2C4-D5E6-4F78-8901-23456789ABCD",
+  "max_payload_size": 60,
+  "commands": [
+    {
+      "id": "0xA0",
+      "name": "SYS_HANDSHAKE",
+      "definition": "system.json",
+      "access": "SET",
+      "description": "Unlock command required for all SET operations"
+    },
+    {
+      "id": "0xA1",
+      "name": "DEVICE_INFO",
+      "definition": "system.json",
+      "access": "GET",
+      "description": "Firmware and hardware versioning"
+    },
+    {
+      "id": "0xA2",
+      "name": "SYSTEM_STATUS",
+      "definition": "system.json",
+      "access": "GET",
+      "description": "Real-time CPU and Memory monitoring"
+    },
+    {
+      "id": "0x83",
+      "name": "AE_STATUS",
+      "definition": "imaging.json",
+      "access": "GET",
+      "description": "Current auto-exposure values"
+    },
+    {
+      "id": "0x70",
+      "name": "FILL_LIGHT_CTRL",
+      "definition": "imaging.json",
+      "access": "SET",
+      "description": "Illumination and Aimer control"
+    },
+    {
+      "id": "0x97",
+      "name": "GI_V5_CONFIG",
+      "definition": "imaging.json",
+      "access": "BOTH",
+      "description": "Algorithm flags for GI v5 engine"
+    },
+    {
+      "id": "0x92",
+      "name": "RAW_IMAGE_REQ",
+      "definition": "imaging.json",
+      "access": "GET",
+      "description": "Frame capture and chunking control"
+    },
+    {
+      "id": "0x90",
+      "name": "BARCODE_RESULT",
+      "definition": "barcode.json",
+      "access": "GET",
+      "description": "Primary barcode output data"
+    },
+    {
+      "id": "0x91",
+      "name": "BARCODE_EXT_TEXT",
+      "definition": "barcode.json",
+      "access": "GET",
+      "description": "Sequential chunks for large barcode text"
+    },
+    {
+      "id": "0x80",
+      "name": "SCAN_MODE_SET",
+      "definition": "barcode.json",
+      "access": "SET",
+      "description": "Engine mode (Manual/Trigger/Continuous)"
+    },
+    {
+      "id": "0xBA",
+      "name": "STRING_XFER",
+      "definition": "file_transfer.json",
+      "access": "BOTH",
+      "description": "Long JSON or log string transport"
+    },
+    {
+      "id": "0xBB",
+      "name": "FILE_UP_HEADER",
+      "definition": "file_transfer.json",
+      "access": "SET",
+      "description": "Firmware/LUT upload initiation"
+    },
+    {
+      "id": "0xBC",
+      "name": "FILE_DN_REQ",
+      "definition": "file_transfer.json",
+      "access": "GET",
+      "description": "Download request for logs/config"
+    },
+    {
+      "id": "0xBD",
+      "name": "FILE_DATA_PACKET",
+      "definition": "file_transfer.json",
+      "access": "BOTH",
+      "description": "Binary data chunk for file transfer"
+    }
+  ]
+}

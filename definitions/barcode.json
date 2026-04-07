@@ -1,0 +1,45 @@
+{
+  "module": "Barcode",
+  "version": "1.2",
+  "payload_size": 60,
+  "commands": [
+    {
+      "command_name": "BARCODE_RESULT",
+      "command_id": "0x90",
+      "desc": "Fetch the primary barcode result and preview text",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x90)" },
+        { "name": "queue_count", "offset": 1, "type": "uint8", "desc": "Number of results pending in device FIFO" },
+        { "name": "seq_number", "offset": 2, "type": "uint32", "desc": "Incremental sequence ID for results (LE)" },
+        { "name": "status", "offset": 6, "type": "uint8", "desc": "0: Empty, 1: Valid Data" },
+        { "name": "format_id", "offset": 7, "type": "uint8", "desc": "Symbology ID (e.g., 0x01: QR, 0x02: EAN13)" },
+        { "name": "format_name", "offset": 8, "type": "char", "size": 15, "desc": "Human readable format string" },
+        { "name": "total_len", "offset": 23, "type": "uint16", "desc": "Total barcode text length (LE)" },
+        { "name": "text_preview", "offset": 25, "type": "char", "size": 34, "desc": "First 34 bytes of barcode data" },
+        { "name": "flags", "offset": 59, "type": "uint8", "desc": "bit0: has_more_chunks, bit1: scan_active" }
+      ]
+    },
+    {
+      "command_name": "BARCODE_EXT_TEXT",
+      "command_id": "0x91",
+      "desc": "Retrieve extended barcode text for results > 34 bytes",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x91)" },
+        { "name": "chunk_index", "offset": 1, "type": "uint8", "desc": "Current chunk index (starts at 1)" },
+        { "name": "chunk_data", "offset": 2, "type": "char", "size": 58, "desc": "58 bytes of extended text data" }
+      ]
+    },
+    {
+      "command_name": "SCAN_MODE_SET",
+      "command_id": "0x80",
+      "desc": "Configure scanning behavior and engine state",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x80)" },
+        { "name": "mode", "offset": 1, "type": "uint8", "desc": "0:Manual, 1:Trigger, 2:Continuous, 3:Presentation" },
+        { "name": "beep_on_done", "offset": 2, "type": "uint8", "desc": "0:Silent, 1:Beep on successful decode" },
+        { "name": "aimer_mode", "offset": 3, "type": "uint8", "desc": "0:Off, 1:On, 2:Flash" },
+        { "name": "timeout_ms", "offset": 4, "type": "uint16", "desc": "Decode session timeout in ms (LE)" }
+      ]
+    }
+  ]
+}

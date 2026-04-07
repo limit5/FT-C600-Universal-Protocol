@@ -1,0 +1,47 @@
+{
+  "module": "System",
+  "version": "2.0",
+  "description": "Core system management and status definitions for FT-C600 platform",
+  "commands": [
+    {
+      "name": "SYS_HANDSHAKE",
+      "id_hint": "0xA0",
+      "desc": "System unlock mechanism using magic keys",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo" },
+        { "name": "key1", "offset": 1, "type": "uint8", "value": 85, "desc": "Magic Key 1 (0x55)" },
+        { "name": "key2", "offset": 2, "type": "uint8", "value": 170, "desc": "Magic Key 2 (0xAA)" },
+        { "name": "status", "offset": 3, "type": "uint8", "desc": "Lock status (0:Locked, 1:Unlocked)" }
+      ]
+    },
+    {
+      "name": "DEVICE_INFO",
+      "id_hint": "0xA1",
+      "desc": "Hardware and software versioning details",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo" },
+        { "name": "ver_major", "offset": 1, "type": "uint8", "desc": "Major version" },
+        { "name": "ver_minor", "offset": 2, "type": "uint8", "desc": "Minor version" },
+        { "name": "ver_patch", "offset": 3, "type": "uint8", "desc": "Patch version" },
+        { "name": "git_hash", "offset": 4, "type": "string", "size": 8, "desc": "Git commit short hash" },
+        { "name": "build_date", "offset": 12, "type": "string", "size": 16, "desc": "Build timestamp (YYYYMMDD-HHMM)" },
+        { "name": "hw_rev", "offset": 28, "type": "uint8", "desc": "Hardware revision ID" },
+        { "name": "serial_num", "offset": 29, "type": "string", "size": 16, "desc": "Unique Device Serial Number" }
+      ]
+    },
+    {
+      "name": "SYSTEM_STATUS",
+      "id_hint": "0xA2",
+      "desc": "Real-time health monitoring",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo" },
+        { "name": "cpu_temp", "offset": 1, "type": "int8", "unit": "Celsius", "desc": "SoC Temperature" },
+        { "name": "cpu_usage", "offset": 2, "type": "uint8", "unit": "Percent", "desc": "CPU Load" },
+        { "name": "mem_usage", "offset": 3, "type": "uint8", "unit": "Percent", "desc": "Memory Load" },
+        { "name": "uptime", "offset": 4, "type": "uint32", "unit": "Seconds", "desc": "System uptime (Little-Endian)" },
+        { "name": "v_core", "offset": 8, "type": "uint16", "unit": "mV", "desc": "Core voltage" },
+        { "name": "npu_status", "offset": 10, "type": "uint8", "desc": "AI Accelerator state (0:Idle, 1:Busy)" }
+      ]
+    }
+  ]
+}

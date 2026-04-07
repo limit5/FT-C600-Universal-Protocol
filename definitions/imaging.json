@@ -1,0 +1,56 @@
+{
+  "module": "Imaging",
+  "version": "2.1",
+  "payload_size": 60,
+  "commands": [
+    {
+      "command_name": "AE_STATUS",
+      "command_id": "0x83",
+      "desc": "Auto Exposure real-time status and manual overrides",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x83)" },
+        { "name": "ae_enable", "offset": 1, "type": "uint8", "desc": "0: Manual, 1: Auto" },
+        { "name": "target_luma", "offset": 2, "type": "uint8", "desc": "Target luminance level" },
+        { "name": "current_luma", "offset": 3, "type": "uint8", "desc": "Measured average luminance" },
+        { "name": "intt_us", "offset": 8, "type": "uint32", "desc": "Integration time in microseconds (LE)" },
+        { "name": "analog_gain", "offset": 12, "type": "uint16", "desc": "Sensor analog gain (U.6 format, LE)" },
+        { "name": "digital_gain", "offset": 14, "type": "uint16", "desc": "ISP digital gain (U.8 format, LE)" }
+      ]
+    },
+    {
+      "command_name": "FILL_LIGHT_CTRL",
+      "command_id": "0x70",
+      "desc": "Illumination and Aimer LED control",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x70)" },
+        { "name": "led_mode", "offset": 1, "type": "uint8", "desc": "0: Off, 1: On, 2: Flash, 3: Auto" },
+        { "name": "intensity", "offset": 2, "type": "uint8", "desc": "PWM brightness (0-255)" },
+        { "name": "aimer_enable", "offset": 3, "type": "uint8", "desc": "0: Off, 1: On" }
+      ]
+    },
+    {
+      "command_name": "GI_V5_CONFIG",
+      "command_id": "0x97",
+      "desc": "GI v5 Engine image processing flags and tuning",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x97)" },
+        { "name": "sub_cmd", "offset": 1, "type": "uint8", "desc": "Sub-command (e.g., 0x0D for Flags)" },
+        { "name": "gi_flags", "offset": 2, "type": "uint16", "desc": "Bitwise: b0:VIGCAL, b7:DIST, b8:PICKLIST (LE)" },
+        { "name": "bio_modulation", "offset": 4, "type": "uint8", "desc": "Bio-modulation strength for scanning" },
+        { "name": "ce_lut_factor", "offset": 5, "type": "uint8", "desc": "Contrast Enhancement LUT factor" }
+      ]
+    },
+    {
+      "command_name": "RAW_IMAGE_REQ",
+      "command_id": "0x92",
+      "desc": "Trigger and manage raw image chunked transfer",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0x92)" },
+        { "name": "capture_state", "offset": 1, "type": "uint8", "desc": "0:Idle, 1:Arm, 2:Ready, 3:Error" },
+        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Current chunk index to fetch (LE)" },
+        { "name": "total_chunks", "offset": 4, "type": "uint16", "desc": "Total chunks for this frame (LE)" },
+        { "name": "frame_id", "offset": 6, "type": "uint32", "desc": "Sequence ID of captured frame" }
+      ]
+    }
+  ]
+}

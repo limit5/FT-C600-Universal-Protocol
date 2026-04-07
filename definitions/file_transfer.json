@@ -1,0 +1,52 @@
+{
+  "module": "FileTransfer",
+  "version": "1.0",
+  "payload_size": 60,
+  "commands": [
+    {
+      "command_name": "STRING_XFER",
+      "command_id": "0xBA",
+      "desc": "Transfer long strings (JSON, Logs) in 56-byte chunks",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0xBA)" },
+        { "name": "sub_cmd", "offset": 1, "type": "uint8", "desc": "0:Start, 1:Data, 2:End, 3:Cancel" },
+        { "name": "chunk_index", "offset": 2, "type": "uint16", "desc": "Current chunk sequence (LE)" },
+        { "name": "payload", "offset": 4, "type": "char", "size": 56, "desc": "String content chunk" }
+      ]
+    },
+    {
+      "command_name": "FILE_UP_HEADER",
+      "command_id": "0xBB",
+      "desc": "Initiate file upload from Host to Device (e.g., Firmware/LUT)",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0xBB)" },
+        { "name": "file_type", "offset": 1, "type": "uint8", "desc": "1:FW, 2:LUT, 3:Config" },
+        { "name": "total_size", "offset": 4, "type": "uint32", "desc": "Total file size in bytes (LE)" },
+        { "name": "checksum", "offset": 8, "type": "uint32", "desc": "CRC32 of the entire file (LE)" },
+        { "name": "file_name", "offset": 12, "type": "char", "size": 32, "desc": "Target filename string" }
+      ]
+    },
+    {
+      "command_name": "FILE_DATA_PACKET",
+      "command_id": "0xBD",
+      "desc": "General purpose data packet for chunked file transfer",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID (0xBD)" },
+        { "name": "session_id", "offset": 1, "type": "uint8", "desc": "Identifier for concurrent transfers" },
+        { "name": "chunk_index", "offset": 2, "type": "uint32", "desc": "Current data offset / index (LE)" },
+        { "name": "data", "offset": 6, "type": "uint8", "size": 54, "desc": "Raw binary data payload" }
+      ]
+    },
+    {
+      "command_name": "FILE_DN_REQ",
+      "command_id": "0xBC",
+      "desc": "Request file download from Device to Host (e.g., Crash Log)",
+      "fields": [
+        { "name": "echo", "offset": 0, "type": "uint8", "desc": "Command ID echo (0xBC)" },
+        { "name": "file_id", "offset": 1, "type": "uint16", "desc": "ID of the file to retrieve" },
+        { "name": "request_offset", "offset": 4, "type": "uint32", "desc": "Seek offset in file (LE)" },
+        { "name": "request_size", "offset": 8, "type": "uint16", "desc": "Number of bytes requested" }
+      ]
+    }
+  ]
+}

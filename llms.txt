@@ -1,0 +1,40 @@
+# AI Context & Instructions for FT-C600 Universal Protocol (FUP)
+
+> **CRITICAL WARNING FOR ALL AI AGENTS (Claude, GPT, Gemini, etc.):** > DO NOT UNDER ANY CIRCUMSTANCES modify any files inside the `dist/` directory. All files in `dist/` are auto-generated. 
+> To change data structures, you MUST modify the JSON files in `definitions/` and run `python3 generators/gen_protocol.py --mode all`.
+
+## 1. Project Identity & Architecture
+This repository is the Single Source of Truth (SSOT) for the FT-C600 (Cortex-A7) imaging platform's communication protocol. 
+It decouples data definitions (JSON) from physical transport layers (UVC XU and RTSP/ONVIF).
+
+* **Definitions (`definitions/`)**: Protocol-agnostic JSON schemas.
+* **Transports (`transports/`)**: Physical mapping rules (e.g., UVC 60-byte offsets, RTSP API endpoints).
+* **Generators (`generators/`)**: Python scripts that read definitions and mappings to output C/C++/TS code.
+
+## 2. Hardware Constraints & Endianness
+When suggesting modifications to the UVC transport layer, you must strictly adhere to the following hardware constraints:
+* **Payload Limit**: UVC XU commands are strictly limited to exactly **60 bytes**. The generator handles padding, but the sum of fields in JSON cannot exceed 60 bytes.
+* **Endianness**: The FT-C600 SoC and the Host PC/WSL2 might differ. All multi-byte integers (`uint16`, `uint32`) transferred via UVC MUST be serialized/deserialized as **Little-Endian**. Use `endian_utils.h` macros (`FUP_GET_U16`, `FUP_GET_U32`) for any C/C++ transport implementations.
+
+## 3. Domain Boundaries for Downstream Projects
+When assisting with downstream projects, refer to the specific output directories:
+
+* **OmniSight-Forge (React/Node.js)**: 
+  * Refer to `dist/ts/protocol.ts`. 
+  * Do not worry about byte offsets. Focus on standard JSON REST/RTSP interactions.
+* **gi5_sim (Python Data Analysis)**: 
+  * Use the generated Python structs (if applicable) or refer directly to the JSON definitions to parse binary dumps containing AE parameters or 0x90 Barcode results.
+* **UVCCamera (Windows MFC)**: 
+  * Refer to `dist/cpp_mfc/` (or `dist/c/`). 
+  * Ensure `pragma pack(1)` is respected when handling binary UVC buffers.
+* **Embedded Linux SDK (Cortex-A7)**: 
+  * Refer to `dist/c/`. 
+  * Focus on memory alignment and avoiding dynamic allocation.
+
+## 4. Standard Operating Procedure (SOP) for Protocol Modification
+If the user asks you to "Add a new sensor field" or "Update the barcode format":
+1. Read the relevant JSON in `definitions/`.
+2. Add the field with its correct `type` and `offset` (if UVC).
+3. If it's a new command, update the relevant `mapping.json` in `transports/`.
+4. Tell the user to run `python3 generators/gen_protocol.py --mode all`.
+5. NEVER directly rewrite the C++ headers or TypeScript interfaces.
